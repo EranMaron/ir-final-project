@@ -1,11 +1,14 @@
-const bodyParser = require(`body-parser`),
-  fileUpload = require(`express-fileupload`),
-  fs = require(`fs`),
-  unzip = require(`unzip`);
-(path = require(`path`)),
-  (rimraf = require(`rimraf`)),
-  (errObj = require(`../errObj`)),
-  (util = require(`util`)); // for objects content in console   ---> *** DELETE AT THE END ***
+const     bodyParser      = require(`body-parser`),
+          fileUpload      = require(`express-fileupload`),
+          fs              = require(`fs`),
+          unzip           = require(`unzip`);
+          (path           = require(`path`)),
+          (errObj         = require(`../errObj`)),
+          (rimraf         = require(`rimraf`)),
+
+          Term            = require(`../models/term`),
+          Document        = require(`../models/document`),
+          (util           = require(`util`)); // for objects content in console   ---> *** DELETE AT THE END ***
 
 const MACOSX = `__MACOSX`;
 const DS_Store = `.DS_Store`;
@@ -50,13 +53,12 @@ tokenize = fileContent => {
   };
 
   fileContent = fileContent.toLowerCase();
-  fileContent = splitMulti(fileContent, [`:`, `;`, ` `, `\n`, `"`, `,`, `.`]);
+  fileContent = splitMulti(fileContent, [`:`, `;`, ` `, `\n`, `"`, `,`, `'`, `.` , `-` , `+` , `=` , `!`,`@`,`#`,`$`,`%`,`^`,`&`,`*`,`(`,`)`,`|`,`?`,`>`,`<`,`~`, `/` ,`[`,`]`,`\\`]);
   fileContent = fileContent.filter(word => {
     return word.length != 0;
   });
   return fileContent;
 };
-
 
 
 
@@ -99,6 +101,7 @@ function createGeneralTermsObjectsArray (filesInSource) {
       generalWordsArray = generalWordsArray.concat(createInitializedTermsArray(filesInSource[i]));           
   }
   generalWordsArray.sort(compareTermsForSortingFunc);  
+  console.log(generalWordsArray);
   return generalWordsArray;
 }
 
@@ -163,27 +166,27 @@ function sortAndMergeTermsFunc (generalTermsArray) {
 
 
 
-/* *** IS IT NEEDED??? FOR OPTIMIZATION*** */
 
-/* bollean function to check if some documentNumber is already exists in a term's locations Array  */
-// function checkIfSameDocNumberExists(termObjToCheck , docNumberToCheck) {
-//   for (let i = 0 ; i < termObjToCheck.locations.length ; i++) {
-//     if (termObjToCheck.locations[i].documentNumber === docNumberToCheck)      
-//       return true;   // 'docNumberToCheck' exists in the 'termObjToCheck' locations array
-//   }
-//   return false; // 'docNumberToCheck' is not exist in the 'termObjToCheck' locations array
-// }
+function saveTermsInDB(mergedArray) {
+  console.log(`1111111111111111111111`);
+  console.log(mergedArray);
+  console.log(">> in saveTermsInDB ")
 
-
-
-
-
-
-
-
-
-
-
+  let numOfTerms = mergedArray.length;
+  for(let i = 0 ; i < numOfTerms ; i++) {
+    for (let j = 0 ; j < mergedArray[i].locations.length ; j++) {
+      mergedArray[i].locations[j].documentNumber = Number(mergedArray[i].locations[j].documentNumber);
+    }
+      
+      
+    Term.findOneAndUpdate(
+      {word: `${mergedArray[i].term}`},
+      {$push: {locations: mergedArray[i].locations}},
+      {upsert: true , new: true})
+      .then(response => console.log(`"${mergedArray[i].term}" Saved/Updated on DB`))
+      .catch(err => console.log(err))
+  }
+}
 
 
 
@@ -277,97 +280,9 @@ module.exports = {
         });
         /* *** at this point: files are uploaded. *** */
 
-
-        createGeneralTermsObjectsArray(filesInSource);  // for holding the words from all the documents- all together as a TermsObjects Array
-        mergedArray = sortAndMergeTermsFunc(generalTermsArray); // mergedArray is now an Index JSON object. holds locations, hits, no duplicates terms.
-
-
+        generalTermsArray = createGeneralTermsObjectsArray(filesInSource);  // for holding the words from all the documents- all together as a TermsObjects Array
+        mergedArray = sortAndMergeTermsFunc(generalTermsArray); // mergedArray is now an I`ndex JSON object. holds locations, hits, no duplicates terms.
+        saveTermsInDB(mergedArray)
       });
     }
 }
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-// function sortAndMergeTermsFunc (generalTermsArray) {
-  //   let keyIndex = 0; // "ptr" to the term that we are working on. final merged term will be stored in this index.
-  //   let runnerIndex = 1;  // "ptr" for checking the next words
-  //   let mergedArray = new Array();
-  //   let tmpTerm = {
-  //     term: '',
-  //     locations: [{
-  //       documentNumber: -1,
-  //       hits: -1
-  //     }]
-  //   }
-  
-  //   while(keyIndex != -1) {
-  //     if(runnerIndex >= generalTermsArray.length) {    // end of termsArray
-  //       if (runnerIndex - keyIndex === 1) 
-  //         mergedArray.push((generalTermsArray[keyIndex]).splice(0)) // simply push the last element cause it doesnt have duplicates occurences
-  //       else {
-  //         let numOfElementsToDelete;
-  //         numOfElementsToDelete = runnerIndex-1 - keyIndex;
-  //         if (numOfElementsToDelete === 0)
-  //           continue;
-  //         else {
-  //           tmpTerm.push(generalTermsArray[keyIndex].splice(0));
-  //           keyIndex = -1;
-  //           // generalTermsArray.splice(keyIndex + 1 , numOfElementsToDelete ); // leaving only the updated first term, erasing all duplicated terms.
-  //           // console.log("\n\nTMP CHECK");
-  //         }  
-  //       }
-  //     }
-  //     if (generalTermsArray[keyIndex].term === generalTermsArray[runnerIndex].term) { // another occurrence of the term 'generalTermsArray[keyIndex]'
-  //       if (runnerIndex = keyIndex === 1) 
-  //         tmpTerm = generalTermsArray.splice(0); // copying by value
-        
-  //       let docNumToCheck = generalTermsArray[runnerIndex].locations[0].documentNumber;
-  //       let docAlreadyExistsInArray = checkIfSameDocNumberExists(generalTermsArray[keyIndex] , docNumToCheck); // function returns bool variable
-  
-  //       if (docAlreadyExistsInArray) {
-  //         for (let i = 0 ; i < generalTermsArray[keyIndex].locations.length ; i++) {  //in order to find array and update 'hits'
-  //           if (tmpTerm.locations[i].documentNumber === docNumToCheck)  // update tmpTerm 'hits' value
-  //             tmpTerm.locations[i].hits++;
-  //         }
-  //       }
-  //       else  // docNumber doesnt exists in the locations array
-  //         tmpTerm.locations.push((generalTermsArray[runnerIndex].locations[0]).splice(0));
-  
-  //       runnerIndex++;
-  //     }
-  //     else if (generalTermsArray[runnerIndex] != undefined){  // No more occurensses to the term 'generalTermsArray[keyIndex]'
-  //       let numOfElementsToDelete;
-  //       numOfElementsToDelete = runnerIndex - keyIndex;
-  //       if (numOfElementsToDelete === 0)
-  //         continue;
-  //       else {
-  //         generalTermsArray.splice(keyIndex + 1 , numOfElementsToDelete ); // leaving only the updated first term, erasing all duplicated terms.
-  //         runnerIndex = ++keyIndex;
-  //         // console.log("\n\nTMP CHECK");
-  //       }
-  //     }
-  //   }
-  
-  //   return mergedArray;
-  // }

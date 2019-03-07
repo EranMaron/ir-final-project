@@ -1,11 +1,11 @@
 const mongoose = require(`mongoose`);
 
-const locationSchema = new Schema({
-  document: { type: Number, ref: `Documents`, required: true }, //document number
+const locationSchema = new mongoose.Schema({
+  documentNumber: { type: Number, ref: `Documents`, required: true }, //document number
   hits: { type: Number, required: true }
 });
 
-const termSchema = new Schema(
+const termSchema = new mongoose.Schema(
   {
     word: { type: String, required: true },
     //soundexCode: { type: String, required: true },

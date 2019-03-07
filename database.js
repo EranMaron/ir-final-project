@@ -12,10 +12,6 @@ const options = {
   autoReconnect: true
 };
 
-mongoose
-  .connect(
-    url,
-    options
-  )
+mongoose.connect( url, options)
   .then(() => console.log(`connected`))
   .catch(err => console.log(`connection error: ${err}`));
