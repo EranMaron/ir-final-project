@@ -88,8 +88,11 @@ tokenize = fileContent => {
   return fileContent;
 };
 
+/*
+function for saving all the terms (after cleaning the non-letters chars) with first
+initialization of documentNumber & hits. duplicates term are allowed
+*/
 function createInitializedTermsArray(fileName) {
-  // clean words from the txt file + add each word a doc #      ---> we have an array that holds: {word , doc #}. duplicated words allowed at this step
   let fileContent = fs.readFileSync(`${sourceDir}/${fileName}`);
   let tokenizedFileContent = tokenize(fileContent.toString("utf8"));
   let objectsArray = new Array();
@@ -129,7 +132,7 @@ function createGeneralTermsObjectsArray(filesInSource) {
       );
   }
   generalWordsArray.sort(compareTermsForSortingFunc);
-  console.log(generalWordsArray);
+  // console.log(generalWordsArray);
   return generalWordsArray;
 }
 
@@ -210,10 +213,9 @@ function sortAndMergeTermsFunc(generalTermsArray) {
   return mergedArray;
 }
 
+/* saving term from indexObject to the indexFile on the DB */
 function saveTermsInDB(mergedArray) {
-  console.log(`1111111111111111111111`);
-  console.log(mergedArray);
-  console.log(">> in saveTermsInDB ");
+  console.log(">> in saveTermsInDB() ");
 
   let numOfTerms = mergedArray.length;
   for (let i = 0; i < numOfTerms; i++) {
@@ -231,13 +233,80 @@ function saveTermsInDB(mergedArray) {
       .then(response =>
         console.log(`"${mergedArray[i].term}" Saved/Updated on DB`)
       )
-      .catch(err => console.log(err));
+      .catch(err => console.log(`Error: ${err}`));
   }
+}
+
+function saveDocumentsMetadataInDB() {
+  console.log("<< in saveDocumentsMetadataInDB()");
+  let filesInDir = fs.readdirSync(`${sourceDir}`, (err, files) => {
+    if (err) res.send(new errObj(404, err));
+  });
+
+  filesInDir.map(txtFile => {
+    if (txtFile != DS_Store) {
+      let fileNumber = Number(txtFile.substring(0, txtFile.indexOf(".")));
+      let fileContent = fs.readFileSync(`${sourceDir}/${txtFile}`).toString();
+      let endOfFirstLineIndex = fileContent.indexOf("\n");
+      let endOfSecondLineIndex = fileContent.indexOf(
+        "\n",
+        endOfFirstLineIndex + 1
+      );
+      let endOfDescriptionIndex;
+      for (let i = 0; i < 20; i++) {
+        // for saving the first 20 words in the text file (excluding Title & Author name)
+        if (i === 0)
+          endOfDescriptionIndex = fileContent.indexOf(
+            " ",
+            endOfSecondLineIndex + 1
+          );
+        else
+          endOfDescriptionIndex = fileContent.indexOf(
+            " ",
+            endOfDescriptionIndex + 1
+          );
+      }
+      let fileTitle = fileContent.substring(0, endOfFirstLineIndex);
+      let fileAuthor = fileContent.substring(
+        endOfFirstLineIndex + 1,
+        endOfSecondLineIndex
+      );
+      let description = fileContent.substring(
+        endOfSecondLineIndex + 2,
+        endOfDescriptionIndex
+      );
+
+      Document.findOneAndUpdate(
+        { documentNumber: `${fileNumber}` },
+        {
+          title: `${fileTitle}`,
+          author: `${fileAuthor}`,
+          description: `${description}`
+        },
+        { upsert: true, new: true }
+      )
+        .then(response => console.log(`response`))
+        .catch(error => console.log(`error ${error}`));
+    }
+  });
+}
+
+/* moving the txt files from the Source folder to the Storage --> after saving the term in the DB */
+function moveTxtFilesToStorage() {
+  let filesInDir = fs.readdirSync(`${sourceDir}`, (err, files) => {
+    if (err) res.send(new errObj(404, err));
+  });
+
+  filesInDir.map(txtFile => {
+    if (txtFile != DS_Store) {
+      fs.renameSync(`${sourceDir}/${txtFile}`, `${storageDir}/${txtFile}`);
+    }
+  });
 }
 
 module.exports = {
   // *** breaking optimization needed --> break into small functions ***
-  uploadFile(req, res, next) {
+  uploadFile(req, res) {
     console.log(">> in uploadFile()");
     const file = req.files.file;
     const zipFileName = req.files.file.name;
@@ -247,7 +316,7 @@ module.exports = {
 
     if (file.mimetype !== `application/zip`) {
       // in this case- the file is not a zip file..
-      // NOT ZIP DO SOMETHING.. ZIP VALIDATION
+      // NOT ZIP DO SOMETHING.. ZIP VALIDATION.. FIX
     }
 
     file.mv(`${sourceDir}/${zipFileName}`); // moving the zip file to the zipUploade folder
@@ -315,7 +384,9 @@ module.exports = {
 
         generalTermsArray = createGeneralTermsObjectsArray(filesInSource); // for holding the words from all the documents- all together as a TermsObjects Array
         mergedArray = sortAndMergeTermsFunc(generalTermsArray); // mergedArray is now an I`ndex JSON object. holds locations, hits, no duplicates terms.
-        saveTermsInDB(mergedArray);
+        saveTermsInDB(mergedArray); // saving /updating the indexFile on DB with the local indexObject
+        saveDocumentsMetadataInDB();
+        moveTxtFilesToStorage(); // moving the txt files from the 'Source' Folder to the 'Storage' folder, after saving the term in the db
       });
   }
 };

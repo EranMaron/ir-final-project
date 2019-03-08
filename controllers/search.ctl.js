@@ -4,7 +4,7 @@ const Stemmer = require(`en-stemmer`),
   isLetter = require(`is-letter`),
   _ = require(`lodash`),
   Term = require(`../models/term`),
-  Document = require(`../models/term`);
+  Document = require(`../models/document`);
 
 isQuotationMarksBalanced = query => {
   let isBalanced = true;
@@ -339,20 +339,11 @@ module.exports = {
             );
           }
         }
-        for (let i = 0; i < resultDocuments.length; i++) {
-          Document.find(
-            { documentNumber: resultDocuments[i] },
-            (err, documents) => {
-              if (err) {
-                res.status(500).json(err);
-                return;
-              }
-              documentsData.push(documents);
-            }
-          );
-        }
-        res.json(documentsData);
-        //we now have al the documents number. we need to go to the db and bring meta data
+        Document.find({
+          $or: [{ documentNumber: { $in: resultDocuments } }]
+        }).then(documents => {
+          res.json(documents);
+        });
       })
       .catch(err => {
         res.status(500).json(err);
