@@ -3,6 +3,7 @@ const bodyParser = require(`body-parser`);
 const fileUpload = require(`express-fileupload`);
 
 const adminCtl = require(`./controllers/admin.ctl`);
+const searchCtl = require(`./controllers/search.ctl`);
 const errObj = require(`./errObj`);
 
 const app = express();
@@ -23,5 +24,6 @@ app.use((req, res, next) => {
 });
 
 app.post(`/upload`, adminCtl.uploadFile);
+app.post(`/search`, searchCtl.search);
 
 app.listen(port, () => console.log(`listening on port ${port}`));
