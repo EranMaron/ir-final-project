@@ -21,11 +21,21 @@ export default class Upload extends Component {
       .then(response => console.log(response));
   };
 
-  fileDeleteHandler = e => {
+  fileDeactivateHandler = e => {
     e.preventDefault();
 
     axios
-      .post(`http://localhost:3000/deleteFile`, {
+      .post(`http://localhost:3000/deactivateFile`, {
+        fileNumber: this.fileNumber.value
+      })
+      .then(response => console.log(response));
+  };
+
+  fileActivateHandler = e => {
+    e.preventDefault();
+
+    axios
+      .post(`http://localhost:3000/activateFile`, {
         fileNumber: this.fileNumber.value
       })
       .then(response => console.log(response));
@@ -40,14 +50,23 @@ export default class Upload extends Component {
             <button className="ui button">Upload</button>
           </div>
         </form>
-        <form className="ui form" onSubmit={this.fileDeleteHandler}>
+        <form className="ui form" onSubmit={this.fileDeactivateHandler}>
           <input
-            id="delete"
+            id="deactivate"
             type="text"
-            placeholder="file number to delete"
+            placeholder="file number to deactivate"
             ref={input => (this.fileNumber = input)}
           />
-          <button className="ui button">Delete</button>
+          <button className="ui button">deActivate</button>
+        </form>
+        <form className="ui form" onSubmit={this.fileActivateHandler}>
+          <input
+            id="activate"
+            type="text"
+            placeholder="file number to activate"
+            ref={input => (this.fileNumber = input)}
+          />
+          <button className="ui button">Activate</button>
         </form>
       </div>
     );
