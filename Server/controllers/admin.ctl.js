@@ -281,7 +281,8 @@ function saveDocumentsMetadataInDB() {
         {
           title: `${fileTitle}`,
           author: `${fileAuthor}`,
-          description: `${description}`
+          description: `${description}`,
+          isActive: true
         },
         { upsert: true, new: true }
       )
@@ -320,7 +321,6 @@ module.exports = {
     }
 
     file.mv(`${sourceDir}/${zipFileName}`); // moving the zip file to the zipUploade folder
-    res.json(`succeess`);
 
     /* unzip the zip file */
     fs.createReadStream(`${sourceDir}/${zipFileName}`)
@@ -387,6 +387,20 @@ module.exports = {
         saveTermsInDB(mergedArray); // saving /updating the indexFile on DB with the local indexObject
         saveDocumentsMetadataInDB();
         moveTxtFilesToStorage(); // moving the txt files from the 'Source' Folder to the 'Storage' folder, after saving the term in the db
+        res.json(`files uploaded`);
       });
+  },
+
+  async deleteFile(req, res) {
+    const fileNumberToDelete = req.body.fileNumber;
+    const response = await Document.findOneAndUpdate(
+      { documentNumber: fileNumberToDelete },
+      {
+        isActive: false
+      }
+    );
+    response
+      ? res.status(200).send(`file number ${fileNumberToDelete} deleted`)
+      : res.status(404).send(`file not found`);
   }
 };

@@ -25,5 +25,7 @@ app.use((req, res, next) => {
 
 app.post(`/upload`, adminCtl.uploadFile);
 app.post(`/search`, searchCtl.search);
+app.post(`/deleteFile`, adminCtl.deleteFile);
+app.get(`/getDocumentContent`, searchCtl.getDocument);
 
 app.listen(port, () => console.log(`listening on port ${port}`));

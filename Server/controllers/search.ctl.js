@@ -1,10 +1,13 @@
 const Stemmer = require(`en-stemmer`),
   bodyParser = require(`body-parser`),
+  fs = require(`fs`),
   StopList = require(`../stopList`),
   isLetter = require(`is-letter`),
   _ = require(`lodash`),
   Term = require(`../models/term`),
   Document = require(`../models/document`);
+
+const storageDir = path.join(__dirname, `../documents/storage`);
 
 isQuotationMarksBalanced = query => {
   let isBalanced = true;
@@ -342,6 +345,9 @@ module.exports = {
         Document.find({
           $or: [{ documentNumber: { $in: resultDocuments } }]
         }).then(documents => {
+          documents = Object.values(documents).filter(
+            document => document.isActive
+          );
           res.json(documents);
         });
       })
@@ -349,5 +355,25 @@ module.exports = {
         res.status(500).json(err);
         return;
       });
+  },
+  getDocument(req, res) {
+    let filesInStorageDir = fs.readdirSync(`${storageDir}`, (err, files) => {
+      if (err) res.send(new errObj(404, err));
+    });
+    let chosenFileContent;
+    let fileFoundFlag = false;
+
+    if (filesInStorageDir.length !== 0) {
+      filesInStorageDir.map(fileName => {
+        if (fileName === `${req.query.fileNumber}.txt`) {
+          chosenFileContent = fs
+            .readFileSync(`${storageDir}/${fileName}`)
+            .toString();
+          res.json(chosenFileContent);
+          fileFoundFlag = true;
+        }
+      });
+      if (!fileFoundFlag) res.json(`file not found`);
+    } else res.json(`No Files in DB`);
   }
 };
