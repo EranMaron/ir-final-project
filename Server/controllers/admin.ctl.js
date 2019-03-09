@@ -408,12 +408,15 @@ module.exports = {
 
   async deactivateFile(req, res) {
     const fileNumberToDelete = req.body.fileNumber;
+    console.log(fileNumberToDelete);
     const response = await Document.findOneAndUpdate(
       { documentNumber: fileNumberToDelete },
       {
         isActive: false
       }
     );
+    console.log(response);
+
     response
       ? res.status(200).send(`file number ${fileNumberToDelete} deactivated`)
       : res.status(404).send(`file not found`);
@@ -430,5 +433,19 @@ module.exports = {
     response
       ? res.status(200).send(`file number ${fileNumberToDelete} activated`)
       : res.status(404).send(`file not found`);
+  },
+
+  getAllDocumentsMetaData(req, res) {
+    Document.find({}, (error, result) => {
+      if (error) console.log(error);
+      // FIX
+      else {
+        if (result.length === 0)
+          // db is empty
+          res.json(`db is empty..`);
+        // FIX
+        else res.json(result);
+      }
+    });
   }
 };

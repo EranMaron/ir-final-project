@@ -28,4 +28,5 @@ app.post(`/search`, searchCtl.search);
 app.post(`/deactivateFile`, adminCtl.deactivateFile);
 app.post(`/activateFile`, adminCtl.activateFile);
 app.get(`/getDocumentContent`, searchCtl.getDocument);
+app.get(`/getAllDocumentsData`, adminCtl.getAllDocumentsMetaData);
 app.listen(port, () => console.log(`listening on port ${port}`));
