@@ -26,7 +26,7 @@ export default class Upload extends Component {
 
     axios
       .post(`http://localhost:3000/deactivateFile`, {
-        fileNumber: this.fileNumber.value
+        fileNumber: this.fileNumberToDeactivate.value
       })
       .then(response => console.log(response));
   };
@@ -36,7 +36,7 @@ export default class Upload extends Component {
 
     axios
       .post(`http://localhost:3000/activateFile`, {
-        fileNumber: this.fileNumber.value
+        fileNumber: this.fileNumberToActivaet.value
       })
       .then(response => console.log(response));
   };
@@ -55,7 +55,7 @@ export default class Upload extends Component {
             id="deactivate"
             type="text"
             placeholder="file number to deactivate"
-            ref={input => (this.fileNumber = input)}
+            ref={input => (this.fileNumberToDeactivate = input)}
           />
           <button className="ui button">deActivate</button>
         </form>
@@ -64,7 +64,7 @@ export default class Upload extends Component {
             id="activate"
             type="text"
             placeholder="file number to activate"
-            ref={input => (this.fileNumber = input)}
+            ref={input => (this.fileNumberToActivaet = input)}
           />
           <button className="ui button">Activate</button>
         </form>
