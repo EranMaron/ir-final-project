@@ -1,6 +1,7 @@
-const Stemmer = require(`en-stemmer`),
+const stemmer = require(`stemmer`),
   bodyParser = require(`body-parser`),
   fs = require(`fs`),
+  path = require(`path`),
   StopList = require(`../stopList`),
   isLetter = require(`is-letter`),
   _ = require(`lodash`),
@@ -235,6 +236,10 @@ let cleanquery = query => {
   let operatorsOnly = query.match(/&|!|(\|)/g);
 
   if (wordsOnly != null) {
+    for (let i = 0; i < wordsOnly.length; i++) {
+      wordsOnly[i] = stemmer(wordsOnly[i]);
+    }
+
     if (operatorsOnly != null) {
       for (let i = 0; i < operatorsOnly.length; i++) {
         let expression = {};
@@ -269,10 +274,18 @@ let cleanquery = query => {
   };
 };
 
+let generateSoundexCodes = words => {
+  let arrayOfSoundexCodes = [];
+  for (let word of words) {
+    arrayOfSoundexCodes.push(soundex(word));
+  }
+  return arrayOfSoundexCodes;
+};
+
 module.exports = {
   search(req, res) {
     let query = req.body.query;
-
+    let isSoundexActivated = req.body.soundex === `true`;
     if (query == null || query.length === 0 || !query.trim()) {
       res.status(500).json(`Search field cannot be empty`);
       return;
@@ -303,6 +316,11 @@ module.exports = {
     let whereObject = {
       $or: [{ word: { $in: queryObj.words } }]
     };
+
+    if (isSoundexActivated) {
+      let arrayOfSoundexCodes = generateSoundexCodes(queryObj.words);
+      whereObject.$or.push({ soundexCode: { $in: arrayOfSoundexCodes } });
+    }
 
     Term.find(whereObject)
       .then(words => {

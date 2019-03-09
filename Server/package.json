@@ -16,6 +16,8 @@
     "mongoose": "^5.4.8",
     "multer": "^1.4.1",
     "rimraf": "^2.6.3",
+    "soundex-code": "^1.0.3",
+    "stemmer": "^1.0.3",
     "unzip": "^0.1.11"
   },
   "description": ""

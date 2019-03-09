@@ -8,7 +8,7 @@ const locationSchema = new mongoose.Schema({
 const termSchema = new mongoose.Schema(
   {
     word: { type: String, required: true },
-    //soundexCode: { type: String, required: true },
+    soundexCode: { type: String, required: true },
     locations: [{ type: locationSchema, required: true }]
   },
   { collection: `terms` }

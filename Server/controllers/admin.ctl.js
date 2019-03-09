@@ -3,8 +3,10 @@ const bodyParser = require(`body-parser`),
   fs = require(`fs`),
   unzip = require(`unzip`);
 (path = require(`path`)),
+  (stemmer = require(`stemmer`)),
   (errObj = require(`../errObj`)),
   (rimraf = require(`rimraf`)),
+  (soundex = require(`soundex-code`)),
   (Term = require(`../models/term`)),
   (Document = require(`../models/document`)),
   (util = require(`util`)); // for objects content in console   ---> *** DELETE AT THE END ***
@@ -82,6 +84,11 @@ tokenize = fileContent => {
     `]`,
     `\\`
   ]);
+
+  for (let i = 0; i < fileContent.length; i++) {
+    fileContent[i] = stemmer(`${fileContent[i]}`);
+  }
+
   fileContent = fileContent.filter(word => {
     return word.length != 0;
   });
@@ -106,7 +113,8 @@ function createInitializedTermsArray(fileName) {
           documentNumber: fileName.slice(0, -4),
           hits: 1
         }
-      ]
+      ],
+      sundexCode: soundex(term)
     };
     objectsArray.push(tmpTerm);
   });
@@ -149,7 +157,8 @@ function sortAndMergeTermsFunc(generalTermsArray) {
         documentNumber: -1,
         hits: -1
       }
-    ]
+    ],
+    sundexCode: null
   };
 
   while (keyIndex < numOfTerms) {
@@ -206,7 +215,8 @@ function sortAndMergeTermsFunc(generalTermsArray) {
             documentNumber: -1,
             hits: -1
           }
-        ]
+        ],
+        sundexCode: null
       };
     }
   }
@@ -226,8 +236,13 @@ function saveTermsInDB(mergedArray) {
     }
 
     Term.findOneAndUpdate(
-      { word: `${mergedArray[i].term}` },
-      { $push: { locations: mergedArray[i].locations } },
+      {
+        word: `${mergedArray[i].term}`
+      },
+      {
+        $push: { locations: mergedArray[i].locations },
+        soundexCode: soundex(`${mergedArray[i].term}`)
+      },
       { upsert: true, new: true }
     )
       .then(response =>
