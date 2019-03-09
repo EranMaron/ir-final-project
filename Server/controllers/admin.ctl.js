@@ -406,7 +406,7 @@ module.exports = {
       });
   },
 
-  async deleteFile(req, res) {
+  async deactivateFile(req, res) {
     const fileNumberToDelete = req.body.fileNumber;
     const response = await Document.findOneAndUpdate(
       { documentNumber: fileNumberToDelete },
@@ -415,7 +415,20 @@ module.exports = {
       }
     );
     response
-      ? res.status(200).send(`file number ${fileNumberToDelete} deleted`)
+      ? res.status(200).send(`file number ${fileNumberToDelete} deactivated`)
+      : res.status(404).send(`file not found`);
+  },
+
+  async activateFile(req, res) {
+    const fileNumberToDelete = req.body.fileNumber;
+    const response = await Document.findOneAndUpdate(
+      { documentNumber: fileNumberToDelete },
+      {
+        isActive: true
+      }
+    );
+    response
+      ? res.status(200).send(`file number ${fileNumberToDelete} activated`)
       : res.status(404).send(`file not found`);
   }
 };
